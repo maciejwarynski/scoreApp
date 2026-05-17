@@ -10,6 +10,8 @@ type PenaltiesState = {
   ao: Record<string, number>;
 };
 
+type PenaltyType = keyof typeof rule.penalties;
+
 function KumiteComponent() {
   const { akaName, aoName, category, minutes, seconds } = useSettings();
 
@@ -36,7 +38,7 @@ function KumiteComponent() {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
 
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     const saved = loadState();
@@ -44,7 +46,22 @@ function KumiteComponent() {
 
     setAkaPoints(saved.akaPoints ?? 0);
     setAoPoints(saved.aoPoints ?? 0);
-    setPenalties(saved.penalties ?? { aka: {}, ao: {} });
+    setPenalties(
+      saved.penalties ?? {
+        aka: {
+          atenai: 0,
+          jogai: 0,
+          mubobi: 0,
+          chukoku: 0,
+        },
+        ao: {
+          atenai: 0,
+          jogai: 0,
+          mubobi: 0,
+          chukoku: 0,
+        },
+      }
+    );
     setTimeLeft(saved.timeLeft ?? 0);
     setIsRunning(saved.isRunning ?? false);
   }, []);
@@ -73,10 +90,6 @@ function KumiteComponent() {
 
   const openWindow = () => {
     window.open("/display", "kumite-display", "width=1920,height=1080");
-  };
-
-  const sync = (nextState: any) => {
-    saveState(nextState);
   };
 
   // INIT TIMER FROM SETTINGS
@@ -114,7 +127,9 @@ function KumiteComponent() {
     );
   }
 
-  const penaltyList = Object.keys(rule.penalties);
+  const penaltyList = Object.keys(
+    rule.penalties
+  ) as (keyof typeof rule.penalties)[];
 
   const formatTime = (t: number) => {
     const m = Math.floor(t / 60);
@@ -130,7 +145,7 @@ function KumiteComponent() {
   const handleAoPlus = () => setAoPoints((p) => p + 1);
   const handleAoMinus = () => setAoPoints((p) => Math.max(0, p - 1));
 
-  const addPenalty = (fighter: Fighter, type: string) => {
+  const addPenalty = (fighter: Fighter, type: PenaltyType) => {
     const max = rule.penalties[type as keyof typeof rule.penalties];
 
     setPenalties((prev) => {
@@ -168,8 +183,18 @@ function KumiteComponent() {
     setAoPoints(0);
 
     setPenalties({
-      aka: {},
-      ao: {},
+      aka: {
+        atenai: 0,
+        jogai: 0,
+        mubobi: 0,
+        chukoku: 0,
+      },
+      ao: {
+        atenai: 0,
+        jogai: 0,
+        mubobi: 0,
+        chukoku: 0,
+      },
     });
 
     const min = Number(minutes) || 0;
@@ -191,9 +216,8 @@ function KumiteComponent() {
     <section className="flex flex-col font-roboto text-white">
       {/* HEADER */}
       <div className="flex justify-between p-4 text-4xl font-bold">
-        <div className="bg-red-600 w-1/2 text-start p-2">{akaName}</div>
         <div
-          className={` w-1/2 text-end p-2  ${
+          className={` w-1/2 text-start p-2  ${
             category === "IPPON"
               ? "bg-slate-50 text-black"
               : "bg-sky-600 text-slate-50"
@@ -201,43 +225,11 @@ function KumiteComponent() {
         >
           {aoName}
         </div>
+        <div className="bg-red-600 w-1/2 text-end p-2">{akaName}</div>
       </div>
 
       {/* SCORE */}
       <div className="flex justify-around p-10 font-bold">
-        <div className="flex gap-6 items-center">
-          <button
-            onClick={handleAkaPlus}
-            className="bg-red-600 w-12 h-12 rounded-full hover:cursor-pointer"
-          >
-            +
-          </button>
-
-          <div className="text-[clamp(1rem,20vw,24rem)] text-red-600">
-            {akaPoints}
-          </div>
-
-          <button
-            onClick={handleAkaMinus}
-            className="bg-red-600 w-12 h-12 rounded-full hover:cursor-pointer"
-          >
-            -
-          </button>
-        </div>
-
-        <div className="flex flex-col items-center justify-center gap-2">
-          <div className="text-amber-400 text-[clamp(1rem,6vw,16rem)]">
-            {formatTime(timeLeft)}
-          </div>
-
-          <button
-            onClick={toggleTimer}
-            className="bg-sky-600 px-4 py-1 rounded hover:cursor-pointer"
-          >
-            {isRunning ? "STOP" : "START"}
-          </button>
-        </div>
-
         <div className="flex gap-6 items-center">
           <button
             onClick={handleAoPlus}
@@ -269,34 +261,42 @@ function KumiteComponent() {
             -
           </button>
         </div>
+        <div className="flex flex-col items-center justify-center gap-2">
+          <div className="text-amber-400 text-[clamp(1rem,6vw,16rem)]">
+            {formatTime(timeLeft)}
+          </div>
+
+          <button
+            onClick={toggleTimer}
+            className="bg-sky-600 px-4 py-1 rounded hover:cursor-pointer"
+          >
+            {isRunning ? "STOP" : "START"}
+          </button>
+        </div>
+
+        <div className="flex gap-6 items-center">
+          <button
+            onClick={handleAkaPlus}
+            className="bg-red-600 w-12 h-12 rounded-full hover:cursor-pointer"
+          >
+            +
+          </button>
+
+          <div className="text-[clamp(1rem,20vw,24rem)] text-red-600">
+            {akaPoints}
+          </div>
+
+          <button
+            onClick={handleAkaMinus}
+            className="bg-red-600 w-12 h-12 rounded-full hover:cursor-pointer"
+          >
+            -
+          </button>
+        </div>
       </div>
 
       {/* PENALTIES */}
       <div className="flex gap-10 justify-center font-bold">
-        <div className="flex flex-col gap-2">
-          {penaltyList.map((type) => (
-            <div key={type} className="flex gap-2 items-center">
-              <button
-                onClick={() => addPenalty("aka", type)}
-                className="bg-red-600 px-2 hover:cursor-pointer"
-              >
-                +
-              </button>
-
-              <button
-                onClick={() => removePenalty("aka", type)}
-                className="bg-red-800 px-2 hover:cursor-pointer"
-              >
-                -
-              </button>
-
-              <span>
-                {type} ({penalties.aka[type] ?? 0}/{rule.penalties[type]})
-              </span>
-            </div>
-          ))}
-        </div>
-
         <div className="flex flex-col gap-2">
           {penaltyList.map((type) => (
             <div key={type} className="flex gap-2 items-center">
@@ -316,6 +316,29 @@ function KumiteComponent() {
 
               <span>
                 {type} ({penalties.ao[type] ?? 0}/{rule.penalties[type]})
+              </span>
+            </div>
+          ))}
+        </div>
+        <div className="flex flex-col gap-2">
+          {penaltyList.map((type) => (
+            <div key={type} className="flex gap-2 items-center">
+              <button
+                onClick={() => addPenalty("aka", type)}
+                className="bg-red-600 px-2 hover:cursor-pointer"
+              >
+                +
+              </button>
+
+              <button
+                onClick={() => removePenalty("aka", type)}
+                className="bg-red-800 px-2 hover:cursor-pointer"
+              >
+                -
+              </button>
+
+              <span>
+                {type} ({penalties.aka[type] ?? 0}/{rule.penalties[type]})
               </span>
             </div>
           ))}
