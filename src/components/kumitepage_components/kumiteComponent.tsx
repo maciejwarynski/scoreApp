@@ -5,22 +5,19 @@ import { saveState, loadState } from "../../store/localstorageStore";
 
 type Fighter = "aka" | "ao";
 
-type PenaltiesState = {
-  aka: Record<string, number>;
-  ao: Record<string, number>;
-};
+type PenaltyState = Record<Fighter, Record<PenaltyKey, number>>;
 
-type PenaltyType = keyof typeof rule.penalties;
+type PenaltyKey = "atenai" | "jogai" | "mubobi" | "chukoku";
 
 function KumiteComponent() {
   const { akaName, aoName, category, minutes, seconds } = useSettings();
 
-  const rule = category ? rules[category] : null;
+  const rule = category ? rules[category as keyof typeof rules] : null;
 
   const [akaPoints, setAkaPoints] = useState(0);
   const [aoPoints, setAoPoints] = useState(0);
 
-  const [penalties, setPenalties] = useState({
+  const [penalties, setPenalties] = useState<PenaltyState>({
     aka: {
       atenai: 0,
       jogai: 0,
@@ -127,9 +124,7 @@ function KumiteComponent() {
     );
   }
 
-  const penaltyList = Object.keys(
-    rule.penalties
-  ) as (keyof typeof rule.penalties)[];
+  const penaltyList: PenaltyKey[] = ["atenai", "jogai", "mubobi", "chukoku"];
 
   const formatTime = (t: number) => {
     const m = Math.floor(t / 60);
@@ -145,7 +140,7 @@ function KumiteComponent() {
   const handleAoPlus = () => setAoPoints((p) => p + 1);
   const handleAoMinus = () => setAoPoints((p) => Math.max(0, p - 1));
 
-  const addPenalty = (fighter: Fighter, type: PenaltyType) => {
+  const addPenalty = (fighter: Fighter, type: PenaltyKey) => {
     const max = rule.penalties[type as keyof typeof rule.penalties];
 
     setPenalties((prev) => {
@@ -162,7 +157,7 @@ function KumiteComponent() {
     });
   };
 
-  const removePenalty = (fighter: Fighter, type: string) => {
+  const removePenalty = (fighter: Fighter, type: PenaltyKey) => {
     setPenalties((prev) => {
       const current = prev[fighter][type] ?? 0;
       if (current <= 0) return prev;
