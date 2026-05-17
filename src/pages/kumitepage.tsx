@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useSettings } from "../store/settingsStore";
 import SettingsComponent from "../components/kumitepage_components/settingsComponent";
 import KumiteComponent from "../components/kumitepage_components/kumiteComponent";
+import { Navigate } from "react-router-dom";
 
 type Tab = "settings" | "kumite";
 
