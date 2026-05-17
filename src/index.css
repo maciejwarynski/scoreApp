@@ -1,0 +1,8 @@
+@import "tailwindcss";
+
+@theme {
+  --font-roboto: "Roboto", sans-serif;
+}
+html {
+  background-color: oklch(21% 0.034 264.665);
+}
